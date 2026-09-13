@@ -1,0 +1,59 @@
+"""Reference Fabric SQL connection using a service principal."""
+
+import os
+import struct
+
+import msal
+import pandas as pd
+import pyodbc
+from dotenv import load_dotenv
+
+load_dotenv()
+
+CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
+CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
+TENANT_ID = os.getenv("AZURE_TENANT_ID")
+AZURE_SERVER = os.getenv("AZURE_SERVER")
+AZURE_DB = os.getenv("AZURE_DB")
+
+if not all([CLIENT_ID, CLIENT_SECRET, TENANT_ID, AZURE_SERVER, AZURE_DB]):
+    raise ValueError("Missing required Fabric database environment variables")
+
+AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+SQL_SCOPE = ["https://database.windows.net/.default"]
+
+
+def get_access_token():
+    app = msal.ConfidentialClientApplication(
+        CLIENT_ID,
+        authority=AUTHORITY,
+        client_credential=CLIENT_SECRET,
+    )
+    result = app.acquire_token_for_client(scopes=SQL_SCOPE)
+    if "access_token" not in result:
+        raise RuntimeError(f"Failed to get token: {result.get('error_description')}")
+    return result["access_token"]
+
+
+def main():
+    token_bytes = get_access_token().encode("utf-16-le")
+    access_token = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
+    connection_string = (
+        "Driver={ODBC Driver 18 for SQL Server};"
+        f"Server={AZURE_SERVER};"
+        f"Database={AZURE_DB};"
+        "Encrypt=yes;"
+    )
+
+    with pyodbc.connect(
+        connection_string,
+        attrs_before={1256: access_token},
+    ) as conn:
+        df = pd.read_sql("SELECT * FROM [SalesLT].[SalesOrderDetail]", conn)
+
+    print(df.shape)
+    print(df.head())
+
+
+if __name__ == "__main__":
+    main()
