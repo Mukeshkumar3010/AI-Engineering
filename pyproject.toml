@@ -13,6 +13,7 @@ dependencies = [
     "msal>=1.24.0",
     "openai>=3.8.0",
     "pandas>=3.0.5",
+    "pyadomd>=0.1.1",
     "pyodbc>=5.3.0",
     "python-dotenv>=1.2.3",
     "requests>=2.31.0",
