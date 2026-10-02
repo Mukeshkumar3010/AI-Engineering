@@ -12,30 +12,57 @@ import pyodbc
 import requests
 import pandas as pd
 import os
+from sqlalchemy import create_engine
+from ai_engineering.config import config
 from dotenv import load_dotenv
 
 load_dotenv()
 
-CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
-CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
-TENANT_ID = os.getenv("AZURE_TENANT_ID")
-AZURE_SERVER = os.getenv("AZURE_SERVER")
-AZURE_DB = os.getenv("AZURE_DB")
-DATASET_ID = os.getenv("DATASET_ID")
-WORKSPACE_ID = os.getenv("WORKSPACE_ID")
-SEMANTIC_MODEL_ID = os.getenv("SEMANTIC_MODEL_ID", DATASET_ID)
+# 🧩 Azure Configuration
+CLIENT_ID = config.CLIENT_ID
+CLIENT_SECRET = config.CLIENT_SECRET
+TENANT_ID = config.TENANT_ID
+AZURE_SERVER = config.AZURE_SERVER
+AZURE_DB = config.AZURE_DB
 
-SQL_SCOPE = ["https://database.windows.net/.default"]
-PBI_SCOPE = ["https://analysis.windows.net/powerbi/api/.default"]
-FABRIC_SCOPE = ["https://api.fabric.microsoft.com/.default"]
-SCHEMA_CACHE_PATH = Path(".cache/semantic_model_definition.json")
+# 🗂 Dataset and Workspace Configuration
+DATASET_ID = config.DATASET_ID
+WORKSPACE_ID = config.WORKSPACE_ID
+SEMANTIC_MODEL_ID = config.SEMANTIC_MODEL_ID
+
+# 🔗 API Scopes and Cache Configuration
+SQL_SCOPE = config.SQL_SCOPE
+PBI_SCOPE = config.PBI_SCOPE
+FABRIC_SCOPE = config.FABRIC_SCOPE
+SCHEMA_CACHE_PATH = config.SCHEMA_CACHE_PATH
 #SCHEMA_CACHE_TTL_SECONDS = 7 * 86400
+
+# # 🧩 Azure Configuration
+# CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
+# CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
+# TENANT_ID = os.getenv("AZURE_TENANT_ID")
+# AZURE_SERVER = os.getenv("AZURE_SERVER")
+# AZURE_DB = os.getenv("AZURE_DB")
+
+# # 🗂 Dataset and Workspace Configuration
+# DATASET_ID = os.getenv("DATASET_ID")
+# WORKSPACE_ID = os.getenv("WORKSPACE_ID")
+# SEMANTIC_MODEL_ID = os.getenv("SEMANTIC_MODEL_ID", DATASET_ID)
+
+# # 🔗 API Scopes and Cache Configuration
+# SQL_SCOPE = ["https://database.windows.net/.default"]
+# PBI_SCOPE = ["https://analysis.windows.net/powerbi/api/.default"]
+# FABRIC_SCOPE = ["https://api.fabric.microsoft.com/.default"]
+# SCHEMA_CACHE_PATH = Path(".cache/semantic_model_definition.json")
+
 
 if not all([CLIENT_ID, CLIENT_SECRET, TENANT_ID, AZURE_SERVER, AZURE_DB, DATASET_ID]):
     raise ValueError("Missing required Fabric database environment variables")
 
 
-AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+# 🏛 Authority URL for Microsoft Entra Authentication
+# AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+AUTHORITY = config.AUTHORITY
 
 # Microsoft Entra authentication helper
 def get_access_token(scope):
@@ -96,6 +123,12 @@ def sql_connect():
         "Encrypt=yes;",
         attrs_before={1256: access_token},
     )
+
+
+def sql_engine():
+    """Create a SQLAlchemy engine using the service-principal ODBC connection."""
+    return create_engine("mssql+pyodbc://", creator=sql_connect)
+
 
 # Helper function to call Power BI or Fabric APIs and handle async operations
 def call_pbi_fabric_api(url, scope, payload=None):

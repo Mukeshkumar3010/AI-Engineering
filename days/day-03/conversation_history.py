@@ -1,9 +1,13 @@
 from openai import OpenAI
 from dotenv import load_dotenv
+from config import config
 
 load_dotenv()
 
-client = OpenAI()
+#client = OpenAI()
+
+# Initialize OpenAI client using the key verified by config
+client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 # Initialize conversation history
 # history = []
@@ -15,7 +19,7 @@ client = OpenAI()
 #         break
 #     history.append({"role" : "user", "content" : user_input})
 #     response = client.responses.create(
-#                                         model='gpt-5.6-luna',
+#                                         model=config.MODEL_NAME,
 #                                         input= history
 #                                     )
 #     history.append({"role" : "assistant", "content" : response.output_text})
@@ -28,7 +32,7 @@ client = OpenAI()
 #     if user_input == "exit" :
 #         break
 #     response = client.responses.create( 
-#                                         model = 'gpt-5.6-luna',
+#                                         model = config.MODEL_NAME,
 #                                         input = user_input,
 #                                         previous_response_id = response_id                                    
 #                                     )
@@ -45,7 +49,7 @@ while True :
         break
     history.append({"role" : "user", "content" : user_input})
     response = client.responses.create(
-                                        model = 'gpt-5.6-luna',
+                                        model = config.MODEL_NAME,
                                         input = history
                                     )
     history.append({"role" : "assistant", "content" : response.output_text})

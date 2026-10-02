@@ -1,11 +1,13 @@
 import pandas as pd
-from ai_engineering.fabric_db import sql_connect, pbi_query, get_semantic_model_definition_cached, definition_to_schema_dataframes, build_pbi_schema_text
+from ai_engineering.fabric_client import sql_engine, pbi_query, get_semantic_model_definition_cached, definition_to_schema_dataframes, build_pbi_schema_text
 
 def execute_sql_query(query):
-    with sql_connect() as conn:
-        df = pd.read_sql(query, conn)
-
-    return df
+    engine = sql_engine()
+    try:
+        with engine.connect() as conn:
+            return pd.read_sql_query(query, conn)
+    finally:
+        engine.dispose()
 
 def get_sql_schema(table_name):
     query = f"""

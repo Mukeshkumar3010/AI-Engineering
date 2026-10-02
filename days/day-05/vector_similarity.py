@@ -1,10 +1,12 @@
 from openai import OpenAI
 from dotenv import load_dotenv
+from config import config
 from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
 
-client = OpenAI()
+# client = OpenAI()
+client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 def get_embedding(text: str):
     response = client.embeddings.create(
